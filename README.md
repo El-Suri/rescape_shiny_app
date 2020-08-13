@@ -1,3 +1,3 @@
-# rescape_shiny_app
-A searchable shiny database of research for Rescape innovations
+# Rescape Shiny App
+A searchable shiny database of research related to VR for Rescape innovations.
 
