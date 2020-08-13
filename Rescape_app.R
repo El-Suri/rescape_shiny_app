@@ -1,60 +1,58 @@
 # 06-navlist.R
 
+# Load packages
+
 library(shiny)
 library(shinythemes)
+library(shinyWidgets)
 library(DT)
 library(data.table)
 
-df <- as.data.table(read.csv('~/Documents/Rescape/Shiny_app/Data/list_of_studies.csv'))
 
-# A list of what people can choose in the drop down
-#menu_choices
+# Read in and manipulate data
+
+df <- read.csv('Data/List_of_studies.csv')
+
+# A list of what people can choose in the drop down menu. Selects input from columns and tidies it up for display. 
+key_word_choices <- unique.array(df[c("Key_word1", "Key_word2", "Key_word3", "Key_word4", "Key_word5")])
+key_word_choices <- data.frame(key_word_choices = c(t(key_word_choices)), stringsAsFactors=TRUE)
+key_word_choices <- na.omit(key_word_choices)
+key_word_choices <- matrix(key_word_choices)
+
+# Now convert df to data table 
+df <- as.data.table(df)
+
+# Convert links into clickable hyperlinks
+
+#https://doi.org/
+df$Link <- paste0("<a href='",df$Link,"' target='_blank'>",df$Link,"</a>")
+
+
+
 
 ui <- navbarPage("Rescape Research Portal",
     theme = shinytheme("cerulean"), 
     
  
-    # Search Tab
+    # About page
+    tabPanel('About',
+             tags$div(
+               includeHTML('./About.html')
+               
+    )),
     
+    
+    # Search Tab
     tabPanel('Search',
     sidebarLayout(
       sidebarPanel(width = 2,
-        selectizeInput('search','Choose a research topic', choices = c('All','Anxiety','Biofeedback','Stress'), multiple = TRUE, )
+        selectizeInput('search','Choose a research topic', choices = key_word_choices[[1]], multiple = FALSE)
       ),
-      mainPanel(width = 9, helpText('Summaries created by the Rescape research team'),
+      mainPanel(width = 10, helpText('Select using multiple critera by entering seperate words into the search bar. For example, try typing \'Stress Biofeedback Experiment\'. Download a list of the displayed studies by clicking the \'Download\' button below.'),
         DT::dataTableOutput('search_table'),
-        textOutput('selected_keyword'))
-      )
-    ),
-    
-    # VR & Anxiety Tab
-    
-    tabPanel('VR & Anxiety',
-    sidebarLayout(
-      sidebarPanel(
-        radioButtons('anxiety_page_choice',"", c('Key Findings', 'Spotlight Research', 'Show All'))
-      ),
-        mainPanel(
-          textOutput("selected_var_anx")) 
-      )
-    ),
-    
-    # VR & Sleep Tab
-    
-    tabPanel('VR & Sleep',
-    sidebarLayout(
-      sidebarPanel(
-        radioButtons('sleep_page_choice','', c('Key Findings', 'Spotlight Research', 'Show All'))
-      ),
-    mainPanel(
-      textOutput("selected_var_sleep"))
-    )
-    ),
-    
-    # Hide errros from user
-    tags$style(type="text/css",
-               ".shiny-output-error { visibility: hidden; }",
-               ".shiny-output-error:before { visibility: hidden; }"
+        textOutput('selected_keyword')
+        #downloadButton('downloadData', 'Download Selection'))
+      ))
     )
     
     )
@@ -67,35 +65,68 @@ server <- function(input, output) {
   
   output$search_table <- DT::renderDataTable({
     if (is.null(input$search) || input$search == 'All'){
-      disp_table <- df[,c('Title','Summary','Reference','DOI')]
-      DT::datatable(disp_table)} 
+      disp_table <- df[,c('Title','Year','Journal','Authors','Study_Type','Link','Tags')]
+      DT::datatable(disp_table,
+                    escape = FALSE,
+                    filter = 'top',
+      extensions = 'Buttons',
+      
+      options = list(
+        order = list(list(1, 'desc')),
+        paging = FALSE,
+        columnDefs = list(list(visible=FALSE, targets=c(6)),list(targets = c(5), searchable = FALSE)), # Hide tags column but still allow search to see the tags. Make links not searchable. 
+        searching = TRUE,
+        fixedColumns = TRUE,
+        autoWidth = TRUE,
+        ordering = TRUE,
+        dom = 'Bftsp',
+        buttons = list(list(
+          extend = 'collection',
+          buttons = c('csv','excel','pdf'),
+          text = 'Download'
+      ))
+      ),
+      rownames = FALSE)
+      
+  
+    }
+  
     else {
-  disp_table <- df[Key_word1 %in% (input$search) | Key_word2 %in% (input$search) | Key_word3 %in%(input$search)]
-  disp_table <- disp_table[,c('Title','Summary','Reference','DOI')]
-  DT::datatable(disp_table) 
+      disp_table <- df[Key_word1 %in% (input$search) | Key_word2 %in% (input$search) | Key_word3 %in%(input$search) | Key_word4 %in%(input$search) | Key_word5 %in%(input$search) ]
+      disp_table <- disp_table[,c('Title','Year','Journal','Authors','Study_Type','Link','Tags')]
+      DT::datatable(disp_table,
+                    escape = FALSE,
+                    filter = 'top',
+      extensions = 'Buttons',
+                              
+      options = list(
+        order = list(list(1, 'desc')),
+        paging = FALSE,
+        columnDefs = list(list(visible=FALSE, targets=c(6)),list(targets = c(5), searchable = FALSE)), # Hide tags column but still allow search to see the tags. Make links not searchable.
+        searching = TRUE,
+        fixedColumns = TRUE,
+        autoWidth = TRUE,
+        ordering = TRUE,
+        dom = 'Bftsp',
+        buttons = list(list(
+          extend = 'collection',
+          buttons = c('csv','excel','pdf'),
+          text = 'Download'
+        ))
+     ),
+     rownames = FALSE)
+  
     }
-  })
+    
+
+    
+})
   
-  
-  # VR & Anxiety Tab
-  
-  output$selected_var_anx <- renderText({
-      displayed_txt = paste("You chose", input$anxiety_page_choice)
-      print(displayed_txt)  
-  })
-  
-  # VR & Sleep Tab
-  
-  # The if statement will be useful later for selecting markdown text to display. 
-  output$selected_var_sleep <- renderText({
-    if (input$sleep_page_choice == ''){
-      displayed_txt = paste("You chose", input$sleep_page_choice) 
-    } else {
-      displayed_txt = paste("You chose", input$sleep_page_choice)
-    }
-    print(displayed_txt)  
-  })
-  
-  }
+}
+
+
+    
+
+
 
 shinyApp(server = server, ui = ui)
