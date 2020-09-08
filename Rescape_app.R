@@ -5,9 +5,61 @@
 library(shiny)
 library(shinythemes)
 library(shinyWidgets)
+library(shinymanager)
 library(DT)
 library(data.table)
 
+# This script is to timeout the login page after 2 mins of inactivity so you dont waste resources:
+
+inactivity <- "function idleTimer() {
+var t = setTimeout(logout, 120000);
+window.onmousemove = resetTimer; // catches mouse movements
+window.onmousedown = resetTimer; // catches mouse movements
+window.onclick = resetTimer;     // catches mouse clicks
+window.onscroll = resetTimer;    // catches scrolling
+window.onkeypress = resetTimer;  //catches keyboard actions
+
+function logout() {
+window.close();  //close the window
+}
+
+function resetTimer() {
+clearTimeout(t);
+t = setTimeout(logout, 120000);  // time is in milliseconds (1000 is 1 second)
+}
+}
+idleTimer();"
+
+
+## Password stuff
+
+inactivity <- "function idleTimer() {
+var t = setTimeout(logout, 120000);
+window.onmousemove = resetTimer; // catches mouse movements
+window.onmousedown = resetTimer; // catches mouse movements
+window.onclick = resetTimer;     // catches mouse clicks
+window.onscroll = resetTimer;    // catches scrolling
+window.onkeypress = resetTimer;  //catches keyboard actions
+
+function logout() {
+window.close();  //close the window
+}
+
+function resetTimer() {
+clearTimeout(t);
+t = setTimeout(logout, 120000);  // time is in milliseconds (1000 is 1 second)
+}
+}
+idleTimer();"
+
+
+# data.frame with credentials info
+credentials <- data.frame(
+  user = c("rescape"),
+  password = c("vir2all"),
+  # comment = c("alsace", "auvergne", "bretagne"), %>% 
+  stringsAsFactors = FALSE
+)
 
 # Read in and manipulate data
 
@@ -28,9 +80,10 @@ df <- as.data.table(df)
 df$Link <- paste0("<a href='",df$Link,"' target='_blank'>",df$Link,"</a>")
 
 
+## APP STARTS HERE
 
-
-ui <- navbarPage("Rescape Research Portal",
+ui <- secure_app(head_auth = tags$script(inactivity),
+                 navbarPage("Rescape Research Portal",
     theme = shinytheme("cerulean"), 
     
  
@@ -56,11 +109,12 @@ ui <- navbarPage("Rescape Research Portal",
     )
     
     )
+)
 
 
 server <- function(input, output) {
   
-  
+  result_auth <- secure_server(check_credentials = check_credentials(credentials))
   # Search Tab
   
   output$search_table <- DT::renderDataTable({
