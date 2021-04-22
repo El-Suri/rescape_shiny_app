@@ -1,0 +1,12 @@
+name: VR_Research_Database
+title:
+username:
+account: rescape
+server: shinyapps.io
+hostUrl: https://api.shinyapps.io/v1
+appId: 2414618
+bundleId: 3885739
+url: https://rescape.shinyapps.io/VR_Research_Database/
+when: 1605893444.35473
+asMultiple: FALSE
+asStatic: FALSE
